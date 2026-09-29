@@ -24,6 +24,13 @@
     <Compile Include="CrystalForgeConfig.cs" />
     <Compile Include="CrystalMaterialRegistration.cs" />
     <Compile Include="CrystalAppearancePolicy.cs" />
+    <Compile Include="IngotDefinition.cs" />
+    <Compile Include="IngotCatalog.cs" />
+    <Compile Include="IngotRegistration.cs" />
+    <Compile Include="IngotSpawnActivation.cs" />
+    <Compile Include="IngotConsumptionPolicy.cs" />
+    <Compile Include="IngotSmeltingRecipeRegistration.cs" />
+    <Compile Include="IngotForgeUnlock.cs" />
     <Compile Include="CrystalMouldTarget.cs" />
     <Compile Include="CrystalMouldRecipeRegistration.cs" />
     <Compile Include="CrystalSmelterInputFilter.cs" />

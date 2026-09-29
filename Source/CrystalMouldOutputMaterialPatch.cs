@@ -135,7 +135,7 @@ internal static class CrystalMouldOutputMaterialPatch
 
         var pickup = entity == null ? null : entity.GetComponent<Pickup>();
         var materialPart = pickup == null ? null : pickup.PhysicalMaterial;
-        var crystalMaterial = CrystalMaterialRegistration.RegisteredMaterial;
+        var crystalMaterial = CrystalMaterialRegistration.FindRegistered(target.Ingot.MaterialHash);
         if (pickup == null || pickup.Item == null || pickup.Item.Hash != target.Product.Hash || materialPart == null || crystalMaterial == null)
         {
             Core.Logger.Warning("Crystal mould output was left unchanged because its expected pickup or physical material was unavailable. Recipe="
@@ -144,6 +144,7 @@ internal static class CrystalMouldOutputMaterialPatch
         }
 
         materialPart.SetMaterial(crystalMaterial);
-        Core.Logger.Msg("Applied Crystal material " + crystalMaterial.Hash + " to mould product " + pickup.Item.name + "(" + pickup.Item.Hash + ").");
+        Core.Logger.Msg("Applied " + target.Ingot.ItemName + " material " + crystalMaterial.Hash
+            + " to mould product " + pickup.Item.name + "(" + pickup.Item.Hash + ").");
     }
 }

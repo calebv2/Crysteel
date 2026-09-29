@@ -3,7 +3,7 @@ using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.0", "ATT", null)]
+[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.1", "ATT", null)]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
 namespace CrystalWeapons;
@@ -25,8 +25,9 @@ public sealed class Core : MelonMod
         CrystalForgeConfig.Initialize();
         var crystalHarmony = new HarmonyLib.Harmony("ATT.CrystalWeapons.Client");
         CrystalClientAppearancePatch.Install(crystalHarmony);
+        IngotSpawnActivation.Install(crystalHarmony, message => Logger.Msg(message));
         clientRuntimeEnabled = true;
-        Logger.Msg("Crystal Weapons initialized in client mode; shared Crystal material registration and renderer appearance are enabled.");
+        Logger.Msg("Crystal Weapons initialized in client mode; ingot registration and renderer appearance are enabled.");
     }
 
     public override void OnLateInitializeMelon()
@@ -35,13 +36,28 @@ public sealed class Core : MelonMod
 
         try
         {
-            var material = CrystalMaterialRegistration.CreateAndRegister();
-            Logger.Msg("Crystal Weapons registered shared material hash " + material.Hash + " on the client.");
+            foreach (var definition in IngotCatalog.All)
+            {
+                var material = ReferenceEquals(definition, IngotCatalog.Crystal)
+                    ? CrystalMaterialRegistration.CreateAndRegister()
+                    : CrystalMaterialRegistration.CreateAndRegister(definition);
+                var ingot = IngotRegistration.CreateAndRegister(definition, material);
+                IngotForgeUnlock.Register(ingot, material);
+                Logger.Msg("Crystal Weapons registered " + definition.ItemName + " on the client: material="
+                    + material.Hash + ", item=" + ingot.Hash + ", prefab=" + ingot.Prefab.Hash
+                    + ", prefabEntity=" + ingot.Prefab.Entity?.Hash
+                    + ", entityPrefab=" + ingot.Prefab.Entity?.Prefab?.Hash + ".");
+            }
         }
         catch (Exception exception)
         {
-            Logger.Error("Crystal Weapons material registration failed on the client: " + exception);
+            Logger.Error("Crystal Weapons ingot/material registration failed on the client: " + exception);
         }
+    }
+
+    public override void OnUpdate()
+    {
+        if (clientRuntimeEnabled) IngotClientAppearance.Update();
     }
 
     private static bool IsServerRuntime()

@@ -12,16 +12,21 @@ public static class CrystalMaterialRegistration
 {
     public const uint CrystalMaterialHash = 0x43574D00u;
     private const uint RedIronIngotHash = 30996u;
-    private const string CrystalMaterialName = "Crystal Red Iron";
     private const string AppearanceTemplateName = "Iron";
     private static readonly MethodInfo MemberwiseCloneMethod = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(typeof(object).FullName, "MemberwiseClone");
 
+    private static readonly Dictionary<uint, PhysicalMaterial> RegisteredMaterials = new Dictionary<uint, PhysicalMaterial>();
     public static PhysicalMaterial? RegisteredMaterial { get; private set; }
 
-    public static PhysicalMaterial CreateAndRegister()
+    public static PhysicalMaterial? FindRegistered(uint hash) => RegisteredMaterials.TryGetValue(hash, out var material) ? material : null;
+
+    public static PhysicalMaterial CreateAndRegister() => CreateAndRegister(IngotCatalog.Crystal, CrystalForgeConfig.ApplyOverrides);
+
+    public static PhysicalMaterial CreateAndRegister(IngotDefinition definition, Action<PhysicalMaterial, PhysicalMaterial>? applyStats = null)
     {
-        if (RegisteredMaterial != null) return RegisteredMaterial;
+        if (definition == null) throw new ArgumentNullException(nameof(definition));
+        if (RegisteredMaterials.TryGetValue(definition.MaterialHash, out var existing)) return existing;
 
         Item.CheckItems();
         PhysicalMaterial.CheckItems();
@@ -48,23 +53,23 @@ public static class CrystalMaterialRegistration
         Core.Logger.Msg("Crystal Weapons material template: " + redIronItem.name + "(" + redIronItem.Hash + ") uses PhysicalMaterial '" + redIron.name + "'(" + redIron.Hash + ").");
 
         var material = UnityEngine.Object.Instantiate(redIron);
-        material.name = CrystalMaterialName;
-        CopyAndTintAppearance(material, ironAppearance);
-        CrystalForgeConfig.ApplyOverrides(material, redIron);
-        AssignStableHash(material, CrystalMaterialHash, CrystalMaterialName);
-        Register(material);
+        material.name = definition.MaterialName;
+        CopyAndTintAppearance(material, ironAppearance, definition);
+        applyStats?.Invoke(material, redIron);
+        AssignStableHash(material, definition.MaterialHash, definition.MaterialName);
+        Register(material, definition);
         Core.Logger.Msg("Registered Crystal Weapons material '" + material.name + "' with stable hash " + material.Hash + ".");
         return material;
     }
 
-    private static void CopyAndTintAppearance(PhysicalMaterial material, PhysicalMaterial appearanceTemplate)
+    private static void CopyAndTintAppearance(PhysicalMaterial material, PhysicalMaterial appearanceTemplate, IngotDefinition definition)
     {
         var clonedMaterials = new Dictionary<Material, Material>();
         foreach (var field in typeof(PhysicalMaterial).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
         {
             if (field.FieldType == typeof(Material) && field.GetValue(appearanceTemplate) is Material sourceMaterial)
             {
-                field.SetValue(material, CloneAndTintMaterial(sourceMaterial, clonedMaterials));
+                field.SetValue(material, CloneAndTintMaterial(sourceMaterial, clonedMaterials, definition));
             }
         }
 
@@ -89,7 +94,7 @@ public static class CrystalMaterialRegistration
             {
                 if (field.FieldType == typeof(Material) && field.GetValue(clonedChannel) is Material sourceMaterial)
                 {
-                    field.SetValue(clonedChannel, CloneAndTintMaterial(sourceMaterial, clonedMaterials));
+                    field.SetValue(clonedChannel, CloneAndTintMaterial(sourceMaterial, clonedMaterials, definition));
                 }
             }
 
@@ -97,25 +102,17 @@ public static class CrystalMaterialRegistration
         }
 
         channelsField.SetValue(material, clonedChannels);
-        Core.Logger.Msg("Crystal Weapons appearance: copied the vanilla Iron renderer materials/channels, cloned "
-            + clonedMaterials.Count + " Unity materials, and applied the RepairHammer ice-blue tint/emission.");
+        Core.Logger.Msg("Crystal Weapons appearance: copied vanilla Iron renderer materials/channels for "
+            + definition.ItemName + ", cloned " + clonedMaterials.Count + " Unity materials, and applied its configured tint/emission.");
     }
 
-    private static Material CloneAndTintMaterial(Material source, IDictionary<Material, Material> clones)
+    private static Material CloneAndTintMaterial(Material source, IDictionary<Material, Material> clones, IngotDefinition definition)
     {
         if (clones.TryGetValue(source, out var existing)) return existing;
 
-        var clone = new Material(source) { name = "Crystal Ice " + source.name };
-        var tint = new Color(
-            CrystalAppearancePolicy.IceTintRed,
-            CrystalAppearancePolicy.IceTintGreen,
-            CrystalAppearancePolicy.IceTintBlue,
-            CrystalAppearancePolicy.IceTintAlpha);
-        var emission = new Color(
-            CrystalAppearancePolicy.IceEmissionRed,
-            CrystalAppearancePolicy.IceEmissionGreen,
-            CrystalAppearancePolicy.IceEmissionBlue,
-            1f);
+        var clone = new Material(source) { name = definition.ItemName + " " + source.name };
+        var tint = definition.Tint;
+        var emission = definition.Emission;
 
         foreach (var propertyName in new[] { "_ColorA", "_ColorB", "_Color" })
         {
@@ -133,14 +130,15 @@ public static class CrystalMaterialRegistration
         return clone;
     }
 
-    private static void Register(PhysicalMaterial material)
+    private static void Register(PhysicalMaterial material, IngotDefinition definition)
     {
         var registry = GetRegistry();
         if (registry.TryGetValue(material.Hash, out var existing))
         {
             if (ReferenceEquals(existing, material))
             {
-                RegisteredMaterial = material;
+                RegisteredMaterials[material.Hash] = material;
+                if (definition.MaterialHash == CrystalMaterialHash) RegisteredMaterial = material;
                 return;
             }
 
@@ -148,7 +146,8 @@ public static class CrystalMaterialRegistration
         }
 
         registry.Add(material.Hash, material);
-        RegisteredMaterial = material;
+        RegisteredMaterials.Add(material.Hash, material);
+        if (definition.MaterialHash == CrystalMaterialHash) RegisteredMaterial = material;
     }
 
     private static void AssignStableHash(HashedGeneralValue value, uint hash, string name)

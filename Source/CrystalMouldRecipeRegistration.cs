@@ -12,9 +12,6 @@ namespace CrystalWeapons;
 public static class CrystalMouldRecipeRegistration
 {
     public const uint CrystalGemBlueItemHash = 45754u;
-    private const string CrystalGemBlueName = "Crystal Gem Blue";
-    public const uint CopperIngotItemHash = 5802u;
-    private const string CopperIngotName = "Copper Ingot";
     private const uint RecipeHashOffset = 0x43570000u;
     private const uint RecipeHashMultiplier = 0x9E3779B1u;
     private const string RecipeNamePrefix = "Crystal Mould ";
@@ -24,37 +21,31 @@ public static class CrystalMouldRecipeRegistration
     private static readonly FieldInfo ItemCountCountField = typeof(ItemCount).GetField("count", BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new MissingFieldException(typeof(ItemCount).FullName, "count");
 
-    private static bool registered;
     private static IReadOnlyList<CrystalMouldTarget> targets = Array.Empty<CrystalMouldTarget>();
-    private static readonly Dictionary<uint, CrystalMouldTarget> TargetsByMouldHash = new Dictionary<uint, CrystalMouldTarget>();
+    private static readonly HashSet<uint> RegisteredIngotHashes = new HashSet<uint>();
+    private static readonly Dictionary<ulong, CrystalMouldTarget> TargetsByMouldAndIngot = new Dictionary<ulong, CrystalMouldTarget>();
     private static readonly Dictionary<uint, CrystalMouldTarget> TargetsByRecipeHash = new Dictionary<uint, CrystalMouldTarget>();
 
     public static IReadOnlyList<CrystalMouldTarget> Register()
     {
-        if (registered) return targets;
+        Item.CheckItems();
+        var crystalIngot = Item.All.FirstOrDefault(item => item.Hash == IngotCatalog.Crystal.ItemHash);
+        if (crystalIngot == null) throw new InvalidOperationException("Crystal Ingot must be registered before its mould recipes.");
+        return Register(IngotCatalog.Crystal, crystalIngot);
+    }
+
+    public static IReadOnlyList<CrystalMouldTarget> Register(IngotDefinition ingotDefinition, Item crystalIngot)
+    {
+        if (ingotDefinition == null) throw new ArgumentNullException(nameof(ingotDefinition));
+        if (crystalIngot == null || crystalIngot.Hash != ingotDefinition.ItemHash)
+            throw new InvalidOperationException("Mould recipe ingot does not match its definition.");
+        if (RegisteredIngotHashes.Contains(ingotDefinition.ItemHash))
+            return targets.Where(target => target.Ingot.ItemHash == ingotDefinition.ItemHash).ToArray();
 
         Item.CheckItems();
         SmeltingRecipe.CheckItems();
-        var crystalGemBlue = Item.All.FirstOrDefault(item => item.Hash == CrystalGemBlueItemHash);
-        if (crystalGemBlue == null || !string.Equals(crystalGemBlue.name, CrystalGemBlueName, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("Could not resolve Crystal Gem Blue item hash " + CrystalGemBlueItemHash + " with its expected name.");
-        }
 
-        var copperIngot = Item.All.FirstOrDefault(item => item.Hash == CopperIngotItemHash);
-        if (copperIngot == null || !string.Equals(copperIngot.name, CopperIngotName, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("Could not resolve Copper Ingot item hash " + CopperIngotItemHash + " with its expected name.");
-        }
-
-        var template = SmeltingRecipe.All.FirstOrDefault(recipe =>
-                ReadItemCounts(recipe, "input").Length == 2 && ReadItemCounts(recipe, "output").Length == 1)
-            ?? SmeltingRecipe.All.FirstOrDefault(recipe =>
-                ReadItemCounts(recipe, "input").Length == 1 && ReadItemCounts(recipe, "output").Length == 1);
-        if (template == null)
-        {
-            throw new InvalidOperationException("No vanilla smelting recipe template with one output is available.");
-        }
+        var template = IngotSmeltingRecipeRegistration.GetVanillaTemplate();
 
         var recipeRegistry = GetRecipeRegistry();
         var registeredTargets = new List<CrystalMouldTarget>();
@@ -95,8 +86,14 @@ public static class CrystalMouldRecipeRegistration
                 Core.Logger.Warning("Skipping mould " + definition.Hash + " for " + product.name + ": product prefab is missing.");
                 continue;
             }
+            if (definition.AllowedMaterials?.Items?.Any(item => item != null && item.Hash == crystalIngot.Hash) != true)
+            {
+                Core.Logger.Warning("Skipping mould " + definition.Hash + " for " + product.name
+                    + ": " + ingotDefinition.ItemName + " is absent from its allowed materials.");
+                continue;
+            }
 
-            var recipeHash = GetRecipeHash(definition.Hash);
+            var recipeHash = GetRecipeHash(definition.Hash, ingotDefinition);
             if (recipeRegistry.ContainsKey(recipeHash) || TargetsByRecipeHash.ContainsKey(recipeHash))
             {
                 Core.Logger.Warning("Skipping mould " + definition.Hash + " for " + product.name + ": deterministic recipe hash " + recipeHash + " collides with a registered recipe.");
@@ -105,15 +102,15 @@ public static class CrystalMouldRecipeRegistration
 
             try
             {
-                var recipe = CreateRecipe(template, definition, product, cost, outputQuantity, copperIngot, crystalGemBlue, recipeHash);
+                var recipe = CreateRecipe(template, definition, product, cost, outputQuantity, crystalIngot, ingotDefinition, recipeHash);
                 recipeRegistry.Add(recipe.Hash, recipe);
                 AddRecipeToAllSmelterUpgradeSets(recipe);
-                var target = new CrystalMouldTarget(definition, product, cost, outputQuantity, recipe);
-                TargetsByMouldHash.Add(definition.Hash, target);
+                var target = new CrystalMouldTarget(definition, product, ingotDefinition, cost, outputQuantity, recipe);
+                TargetsByMouldAndIngot.Add(GetTargetKey(definition.Hash, ingotDefinition.ItemHash), target);
                 TargetsByRecipeHash.Add(recipe.Hash, target);
                 registeredTargets.Add(target);
                 Core.Logger.Msg("Registered Crystal mould product " + product.name + "(" + product.Hash + "): mould="
-                    + definition.Hash + ", Copper Ingot cost=" + cost + ", Crystal Gem Blue cost=" + cost + ", output=" + outputQuantity
+                    + definition.Hash + ", " + ingotDefinition.ItemName + " cost=" + cost + ", output=" + outputQuantity
                     + ", recipe=" + recipe.Hash + ".");
             }
             catch (Exception exception)
@@ -124,24 +121,35 @@ public static class CrystalMouldRecipeRegistration
 
         if (registeredTargets.Count > 0)
         {
-            CrystalSmelterInputFilter.Allow(copperIngot);
-            CrystalSmelterInputFilter.Allow(crystalGemBlue);
+            CrystalSmelterInputFilter.Allow(crystalIngot);
         }
 
-        targets = registeredTargets.ToArray();
-        registered = true;
-        Core.Logger.Msg("Crystal Weapons registered " + targets.Count + " of " + candidates.Length + " discovered mould products.");
-        return targets;
+        targets = targets.Concat(registeredTargets).ToArray();
+        RegisteredIngotHashes.Add(ingotDefinition.ItemHash);
+        Core.Logger.Msg("Crystal Weapons registered " + registeredTargets.Count + " of " + candidates.Length
+            + " discovered mould products for " + ingotDefinition.ItemName + ".");
+        return registeredTargets;
     }
 
     public static CrystalMouldTarget? FindTarget(uint mouldHash)
     {
-        return TargetsByMouldHash.TryGetValue(mouldHash, out var target) ? target : null;
+        return FindTargetForIngot(mouldHash, IngotCatalog.Crystal.ItemHash);
     }
 
     public static CrystalMouldTarget? FindTarget(uint mouldHash, uint productHash)
     {
-        return TargetsByMouldHash.TryGetValue(mouldHash, out var target) && target.Product.Hash == productHash ? target : null;
+        return FindTarget(mouldHash, productHash, IngotCatalog.Crystal.ItemHash);
+    }
+
+    public static CrystalMouldTarget? FindTargetForIngot(uint mouldHash, uint ingotHash)
+    {
+        return TargetsByMouldAndIngot.TryGetValue(GetTargetKey(mouldHash, ingotHash), out var target) ? target : null;
+    }
+
+    public static CrystalMouldTarget? FindTarget(uint mouldHash, uint productHash, uint ingotHash)
+    {
+        var target = FindTargetForIngot(mouldHash, ingotHash);
+        return target != null && target.Product.Hash == productHash ? target : null;
     }
 
     public static SmeltingRecipe? FindRecipe(uint recipeHash)
@@ -160,46 +168,41 @@ public static class CrystalMouldRecipeRegistration
         Item product,
         int cost,
         int outputQuantity,
-        Item copperIngot,
-        Item crystalGemBlue,
+        Item crystalIngot,
+        IngotDefinition ingotDefinition,
         uint recipeHash)
     {
         var recipe = UnityEngine.Object.Instantiate(template);
-        recipe.name = RecipeNamePrefix + product.name + " " + definition.Hash;
+        recipe.name = (ingotDefinition.ItemHash == IngotCatalog.Crystal.ItemHash
+            ? RecipeNamePrefix : ingotDefinition.ItemName + " Mould ") + product.name + " " + definition.Hash;
         AssignStableHash(recipe, recipeHash, recipe.name);
 
-        var inputs = EnsureTwoInputs(recipe);
+        var inputs = EnsureOneInput(recipe);
         var outputs = ReadItemCounts(recipe, "output");
-        SetItem(inputs[0], copperIngot);
+        SetItem(inputs[0], crystalIngot);
         SetCount(inputs[0], cost);
-        SetItem(inputs[1], crystalGemBlue);
-        SetCount(inputs[1], cost);
         SetItem(outputs[0], product);
         SetCount(outputs[0], outputQuantity);
         return recipe;
     }
 
-    private static ItemCount[] EnsureTwoInputs(SmeltingRecipe recipe)
+    private static ItemCount[] EnsureOneInput(SmeltingRecipe recipe)
     {
         var inputs = ReadItemCounts(recipe, "input");
-        if (inputs.Length == 2) return inputs;
-        if (inputs.Length != 1)
-        {
-            throw new InvalidOperationException("Smelting recipe template must have one or two inputs; found " + inputs.Length + ".");
-        }
-
-        var expandedInputs = new[] { inputs[0], new ItemCount() };
-        var inputField = typeof(SmeltingRecipe).GetField("input", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingFieldException(typeof(SmeltingRecipe).FullName, "input");
-        inputField.SetValue(recipe, expandedInputs);
-        return expandedInputs;
+        if (inputs.Length != 1) throw new InvalidOperationException("Smelting recipe template must have one input.");
+        return inputs;
     }
 
-    private static uint GetRecipeHash(uint mouldHash)
+    private static uint GetRecipeHash(uint mouldHash, IngotDefinition ingot)
     {
         // Multiplication by an odd number is one-to-one over UInt32 values.
-        return unchecked(mouldHash * RecipeHashMultiplier + RecipeHashOffset);
+        // Crystal retains its original mould recipe hashes for saved smelts.
+        var variantOffset = ingot.ItemHash == IngotCatalog.Crystal.ItemHash
+            ? 0u : unchecked(ingot.ItemHash * 0x85EBCA6Bu);
+        return unchecked(mouldHash * RecipeHashMultiplier + RecipeHashOffset + variantOffset);
     }
+
+    private static ulong GetTargetKey(uint mouldHash, uint ingotHash) => ((ulong)mouldHash << 32) | ingotHash;
 
     private static ItemCount[] ReadItemCounts(SmeltingRecipe recipe, string fieldName)
     {

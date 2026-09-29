@@ -43,13 +43,12 @@ internal static class CrystalClientAppearancePatch
 
     private static void SetMaterialPostfix(PhysicalMaterialPart __instance, PhysicalMaterial physicalMaterial)
     {
-        if (physicalMaterial == null || physicalMaterial.Hash != CrystalMaterialRegistration.CrystalMaterialHash) return;
+        var appearance = physicalMaterial == null ? null : IngotCatalog.FindByMaterialHash(physicalMaterial.Hash);
+        if (appearance == null) return;
         if (RenderersField.GetValue(__instance) is not Renderer[] renderers) return;
 
-        var tint = new Color(CrystalAppearancePolicy.IceTintRed, CrystalAppearancePolicy.IceTintGreen,
-            CrystalAppearancePolicy.IceTintBlue, CrystalAppearancePolicy.IceTintAlpha);
-        var emission = new Color(CrystalAppearancePolicy.IceEmissionRed, CrystalAppearancePolicy.IceEmissionGreen,
-            CrystalAppearancePolicy.IceEmissionBlue, 1f);
+        var tint = appearance.Tint;
+        var emission = appearance.Emission;
         var rendererCount = 0;
         var emissiveRendererCount = 0;
         foreach (var renderer in renderers)
@@ -96,7 +95,7 @@ internal static class CrystalClientAppearancePatch
     private static void ForgedMaterialPostfix(object __instance, PhysicalMaterial physicalMaterial)
     {
         if (physicalMaterial == null
-            || physicalMaterial.Hash != CrystalMaterialRegistration.CrystalMaterialHash
+            || IngotCatalog.FindByMaterialHash(physicalMaterial.Hash) == null
             || __instance is not ForgedModel forgedModel)
         {
             return;
@@ -111,7 +110,8 @@ internal static class CrystalClientAppearancePatch
     internal static void ApplyForgedMeshAppearance(ForgedModel forgedModel)
     {
         var physicalMaterial = forgedModel.PhysicalMaterial;
-        if (physicalMaterial == null || physicalMaterial.Hash != CrystalMaterialRegistration.CrystalMaterialHash) return;
+        var appearance = physicalMaterial == null ? null : IngotCatalog.FindByMaterialHash(physicalMaterial.Hash);
+        if (appearance == null) return;
 
         var meshFilter = forgedModel.MeshFilter;
         var renderer = meshFilter == null ? null : meshFilter.GetComponent<Renderer>();
@@ -119,10 +119,8 @@ internal static class CrystalClientAppearancePatch
         if (renderer == null) return;
 
         var material = renderer.material;
-        var tint = new Color(CrystalAppearancePolicy.IceTintRed, CrystalAppearancePolicy.IceTintGreen,
-            CrystalAppearancePolicy.IceTintBlue, CrystalAppearancePolicy.IceTintAlpha);
-        var emission = new Color(CrystalAppearancePolicy.IceEmissionRed, CrystalAppearancePolicy.IceEmissionGreen,
-            CrystalAppearancePolicy.IceEmissionBlue, 1f);
+        var tint = appearance.Tint;
+        var emission = appearance.Emission;
         foreach (var propertyName in new[] { "_ColorA", "_ColorB", "_Color" })
         {
             if (CrystalAppearancePolicy.ShouldTint(propertyName) && material.HasProperty(propertyName))
@@ -214,7 +212,7 @@ internal static class CrystalClientAppearancePatch
     private static bool IsCrystalMaterial(PhysicalMaterialPart? part)
     {
         var physicalMaterial = part == null ? null : PhysicalMaterialField.GetValue(part) as PhysicalMaterial;
-        return physicalMaterial != null && physicalMaterial.Hash == CrystalMaterialRegistration.CrystalMaterialHash;
+        return physicalMaterial != null && IngotCatalog.FindByMaterialHash(physicalMaterial.Hash) != null;
     }
 
     private static Renderer[]? GetTargetRenderers(TemperatureToMaterial component)
