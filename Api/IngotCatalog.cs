@@ -14,7 +14,7 @@ public static class IngotCatalog
     public static readonly IngotDefinition Crystal = new IngotDefinition(
         "Crystal Ingot", "Iron Ingot",
         0x43574901u, 0x5001u, 0x43575201u,
-        CrystalMaterialHash, "Crystal Red Iron",
+        CrystalMaterialHash, "Crystal Weapons Material",
         new[] { new IngotIngredient(45754u, "Crystal Gem Blue", 1) },
         new Color(0f, 210f / 255f, 1f, 0.8f),
         new Color(185f / 255f, 1f, 254f / 255f, 1f),

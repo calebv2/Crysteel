@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Alta;
-using Alta.Inventory;
 using UnityEngine;
 
 using CustomIngots.API;
@@ -13,7 +12,6 @@ namespace CrystalWeapons;
 public static class CrystalMaterialRegistration
 {
     public const uint CrystalMaterialHash = IngotCatalog.CrystalMaterialHash;
-    private const uint RedIronIngotHash = 30996u;
     private const string AppearanceTemplateName = "Iron";
     private static readonly BindingFlags MaterialFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly MethodInfo MemberwiseCloneMethod = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -24,41 +22,25 @@ public static class CrystalMaterialRegistration
 
     public static PhysicalMaterial? FindRegistered(uint hash) => RegisteredMaterials.TryGetValue(hash, out var material) ? material : null;
 
-    public static PhysicalMaterial CreateAndRegister() => CreateAndRegister(IngotCatalog.Crystal, CrystalForgeConfig.ApplyOverrides);
+    public static PhysicalMaterial CreateAndRegister() => CreateAndRegister(IngotCatalog.Crystal, CrystalMaterialDefaults.ApplyCrystal);
 
     public static PhysicalMaterial CreateAndRegister(IngotDefinition definition, Action<PhysicalMaterial, PhysicalMaterial>? applyStats = null)
     {
         if (definition == null) throw new ArgumentNullException(nameof(definition));
         if (RegisteredMaterials.TryGetValue(definition.MaterialHash, out var existing)) return existing;
 
-        Item.CheckItems();
         PhysicalMaterial.CheckItems();
-        var redIronItem = Item.All.FirstOrDefault(item => item.Hash == RedIronIngotHash);
-        if (redIronItem == null || redIronItem.name.IndexOf("Red Iron", StringComparison.OrdinalIgnoreCase) < 0)
-        {
-            throw new InvalidOperationException("Could not resolve Red Iron ingot item hash " + RedIronIngotHash + ".");
-        }
-
-        var ingot = redIronItem.GetComponent<Ingot>();
-        var redIron = ingot == null ? null : ingot.PhysicalMaterial;
-        if (redIron == null)
-        {
-            throw new InvalidOperationException("Red Iron ingot " + redIronItem.name + " has no Ingot.PhysicalMaterial template.");
-        }
-
-        var scaling = definition.StatScaling;
-        var sourceMaterial = scaling == null
-            ? redIron
-            : PhysicalMaterial.All.FirstOrDefault(candidate => candidate.Hash == scaling.SourceMaterialHash)
-                ?? throw new InvalidOperationException("Could not resolve source PhysicalMaterial hash "
-                    + scaling.SourceMaterialHash + " for " + definition.ItemName + ".");
-
         var ironAppearance = PhysicalMaterial.All.FirstOrDefault(candidate =>
             string.Equals(candidate.name, AppearanceTemplateName, StringComparison.Ordinal));
         if (ironAppearance == null)
-        {
             throw new InvalidOperationException("Could not resolve the vanilla Iron PhysicalMaterial used by the RepairHammer crystal appearance.");
-        }
+
+        var scaling = definition.StatScaling;
+        var sourceMaterial = scaling == null
+            ? ironAppearance
+            : PhysicalMaterial.All.FirstOrDefault(candidate => candidate.Hash == scaling.SourceMaterialHash)
+                ?? throw new InvalidOperationException("Could not resolve source PhysicalMaterial hash "
+                    + scaling.SourceMaterialHash + " for " + definition.ItemName + ".");
 
         Core.Logger.Msg("Crystal Weapons material template for " + definition.ItemName + ": PhysicalMaterial '"
             + sourceMaterial.name + "'(" + sourceMaterial.Hash + ").");

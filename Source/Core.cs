@@ -5,7 +5,7 @@ using Alta.Inventory;
 using CustomIngots.API;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.3", "ATT", null)]
+[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.4", "ATT", null)]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
 namespace CrystalWeapons;
@@ -17,7 +17,6 @@ public sealed class Core : MelonMod
     public override void OnInitializeMelon()
     {
         Logger = LoggerInstance;
-        CrystalForgeConfig.Initialize();
         IngotSpawnActivation.Install(HarmonyInstance, message => Logger.Msg(message));
         Logger.Msg("Crystal Weapons initialized.");
     }
@@ -34,9 +33,7 @@ public sealed class Core : MelonMod
                 {
                     var material = ReferenceEquals(definition, IngotCatalog.Crystal)
                         ? CrystalMaterialRegistration.CreateAndRegister()
-                        : ReferenceEquals(definition, IngotCatalog.Crysteel)
-                            ? CrystalMaterialRegistration.CreateAndRegister(definition, CrystalForgeConfig.ApplyCrysteelScaling)
-                            : CrystalMaterialRegistration.CreateAndRegister(definition);
+                        : CrystalMaterialRegistration.CreateAndRegister(definition);
                     var ingot = IngotRegistration.CreateAndRegister(definition, material);
                     IngotForgeUnlock.Register(ingot, material);
                     var ingotRecipe = IngotSmeltingRecipeRegistration.Register(definition, ingot);

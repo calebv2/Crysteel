@@ -3,21 +3,18 @@ using System.Reflection;
 
 namespace CrystalWeapons;
 
-// Client materials provide the replicated item's appearance. Gameplay
-// overrides are owned by the server and are never read from client preferences.
-internal static class CrystalForgeConfig
+internal static class CrystalMaterialDefaults
 {
     private const float CrystalDamageMultiplier = 0.85f;
     private const float CrystalDurabilityMultiplier = 0.85f;
     private static readonly BindingFlags MaterialFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-    internal static void ApplyOverrides(PhysicalMaterial target, PhysicalMaterial redIron)
+    internal static void ApplyCrystal(PhysicalMaterial target, PhysicalMaterial iron)
     {
         if (target == null) throw new ArgumentNullException(nameof(target));
-        if (redIron == null) throw new ArgumentNullException(nameof(redIron));
+        if (iron == null) throw new ArgumentNullException(nameof(iron));
 
-        // The target is already a Red Iron clone; only the built-in Crystal
-        // damage and durability defaults differ from that source material.
+        // The target is an Iron clone. Its remaining gameplay properties stay on Iron's values.
         SetFloatField(target, "damageMultiplier", CrystalDamageMultiplier);
         SetFloatField(target, "durabilityMultiplier", CrystalDurabilityMultiplier);
     }

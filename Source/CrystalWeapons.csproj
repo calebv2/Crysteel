@@ -24,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core.cs" />
-    <Compile Include="CrystalForgeConfig.cs" />
+    <Compile Include="CrystalMaterialDefaults.cs" />
     <Compile Include="CrystalMaterialRegistration.cs" />
     <Compile Include="CrystalAppearancePolicy.cs" />
     <Compile Include="IngotRegistration.cs" />
