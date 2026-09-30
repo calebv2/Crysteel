@@ -1,64 +1,14 @@
 # Crysteel
 
-Crysteel creates networked Crystal and Crysteel Ingots by cloning the vanilla Iron Ingot prefab and applying crystal-colored materials. It adds smelting recipes for every valid forge mould product, including weapons, tools, and hammers.
+Crysteel creates and Crysteel Ingots. It adds smelting recipes for every valid forge mould product, including weapons, tools, and hammers.
 
 ## Recipes
 
-- One Crystal Gem Blue in a smelter ore dock produces one Crystal Ingot. The smelter still needs normal fuel; Coal can be used as fuel, but is not currently an ore ingredient.
-- One Darksteel Ingot and 20 Crystal Gem Blue in the smelter ore docks produce one Crysteel Ingot, with normal fuel required.
-- Smelt Crysteel without a mould and put the Darksteel Ingot in first. Crystal Gems placed alone can start the one-gem Crystal Ingot recipe before the Darksteel is added.
-- Both ingot types cost the mould's normal ingot count. A mould that normally costs 5 ingots requires 5 Crystal or 5 Crysteel Ingots. Five Crysteel Ingots require 5 Darksteel Ingots and 100 Crystal Gems.
-- The recipe produces the mould product's native output quantity.
-- The mould output keeps its normal item identity and receives the selected ingot's registered physical material.
-- Both ingot types are registered in each valid mould's allowed-material set and each smelter upgrade's physical-material list.
-- Custom ingot mould inputs require the corresponding registered mould. Insufficient stacks are rejected without consuming them.
-- Ordinary smelter recipes continue through the game's normal recipe path.
-
-Mould entries with a missing product, nonpositive cost, nonpositive output quantity, or missing output prefab are logged and skipped. Recipe hashes are derived from mould hashes and checked against the game's live recipe registry before registration. Existing Crystal mould recipe hashes are preserved.
-
-The Crystal Ingot keeps the test's item hash `0x43574901`, network prefab hash `0x5001` (20481), recipe hash `0x43575201`, and legacy prefab alias `0x43575001`. Keeping these IDs lets saved test ingots resolve after the temporary test DLL is removed. Crysteel uses item hash `0x43574902`, prefab hash `0x5002`, recipe hash `0x43575202`, and material hash `0x43574D02`. Network prefab hashes for new types must fit in 16 bits.
-
-## Material and appearance
-
-Crystal clones the installed game's Iron physical material, then sets its damage and durability multipliers to 0.85, between Copper (0.7) and Iron (1.0). Its thermal, forging, hardness, weight, and other gameplay fields inherit Iron. Crysteel clones the installed game's Darksteel Alloy physical material, scales its damage to 110% and durability to 90% of Darksteel, and inherits Darksteel for every other gameplay field. These values are fixed in both the server and client builds.
-
-Both materials use the vanilla Iron renderer template and ice-blue tint/emission, matching the Crystal Repair Hammer appearance setup. Crysteel uses a brighter blue-white variant. The client companion reapplies the color after the game assigns its atlas materials and keeps the color visible during heat updates; this does not change actual item temperature.
-
-Neither build creates or reads a Crysteel preferences category. Old `[CrystalWeapons]` entries in `MelonPreferences.cfg` are ignored and can be removed.
+- One Darksteel Ingot and 20 Crystal Gems in the smelter one Crysteel Ingot.
+- Cost the mould's normal ingot count. A mould that normally costs 5 ingots requires 5 Crystal or 5 
 
 ## Client companion
 
-Dedicated servers use `Crysteel.dll` for ingot and mould recipes, forge behavior, material registration, and output assignment. Player clients use `Crysteel.Client.dll`; it registers the matching ingot item/prefab/material, the forge material lists, and the appearance needed to render the replicated ingot and forged products. It does not add recipes or consume forge inputs. Both builds reference the shared `CustomIngots.API.dll`.
+Dedicated servers use `Crysteel.dll` for ingot and mould recipes, forge behavior, material registration, and output assignment. Player clients use `Crysteel.Client.dll`; it registers the matching ingot item/prefab/material, the forge material lists, and the appearance needed to render the replicated ingot and forged products. It does not add recipes or consume forge inputs. Both builds need `CustomIngots.API.dll`.
 
 Install `Crysteel.dll` in the dedicated server's `Mods` folder and [`CustomIngots.API.dll`](https://github.com/calebv2/Custom-Ingots/releases/latest/download/CustomIngots.API.dll) in its `UserLibs` folder. Install `Crysteel.Client.dll` in each player's client `Mods` folder and the same `CustomIngots.API.dll` in each client's `UserLibs` folder. Keep the server and client mod DLLs in their respective runtimes. The client build disables itself in batch/server runtimes. The basic Crystal recipe has no dependency on other recipe mods. Crafting Crysteel requires an obtainable Darksteel Ingot; [UsableDarksteel](https://github.com/Circl-NoE/UsableDarksteel) provides that and requires `CustomRecipesAPI.dll` and `MateriaLib.dll` on server and clients.
-
-The server remains authoritative for recipes, crafting, damage, and durability. Remove `CrystalIngotRecipeTest.Server.dll` from server Mods and `CrystalIngotRecipeTest.Client.dll` and `CrystalIngotAppearanceTest.dll` from client Mods before starting the integrated version. The test DLLs would register the same hashes.
-
-## API for other mods
-
-Reference `CustomIngots.API.dll` from another mod, add `using CustomIngots.API;`, and call `IngotCatalog.Register(new IngotDefinition(...))` during that mod's `OnInitializeMelon`. The same definition must be registered on the server and every client before Crysteel's late initialization. The API closes registration at that point and rejects late additions and duplicate item, prefab, recipe, or material hashes. A prefab hash must fit in 16 bits.
-
-An `IngotDefinition` supplies a unique item name and hashes, source ingot prefab name, one or more `IngotIngredient` entries, a unique physical material hash and name, and tint/emission colors. An optional `IngotStatScaling` names a source material hash and applies damage/durability scales; definitions without one inherit Iron gameplay stats. Crysteel then creates and registers the ingot prefab and material on both sides. The server adds ingredient items to its ore filter and registers smelting and mould recipes. Client and server use the same catalogue; no separate recipe or material registration through CustomRecipesAPI or MateriaLib is needed for an API ingot. Other mods may continue using those libraries for their own items, but must not register the same hashes twice.
-
-To change a built-in ingot recipe, edit its `IngotIngredient` entries in `Api/IngotCatalog.cs` in the [Custom-Ingots repository](https://github.com/calebv2/Custom-Ingots), publish the API update, then update this repository's submodule pointer and rebuild both mod DLLs. For example, a Crystal Gem plus Coal recipe would need a second entry with Coal's verified item hash and name. The server would add Coal to its ore input filter; the smelter would still need fuel in its fuel dock. Keep the item, prefab, material, and recipe IDs unchanged for saved ingots.
-
-## Build
-
-Clone with the API submodule so the project reference is available:
-
-```bash
-git clone --recurse-submodules https://github.com/calebv2/Crysteel.git
-cd Crysteel
-```
-
-For an existing clone, initialize it with `git submodule update --init --recursive`.
-
-```bash
-./build.sh
-```
-
-The server script builds the API dependency and `Crysteel.dll` against the installed A Township Tale managed assemblies. The server artifact is written to `Crysteel Build/Crysteel.dll`. Run `./build-client.sh` to build `Crysteel.Client.dll` separately; the client artifact is written to `Crysteel Client Build/Crysteel.Client.dll`. Run the server and client scripts one at a time because they share the API project's intermediate files. `./build-api.sh` builds the API alone and writes `Api/bin/CustomIngots.API.dll`.
-
-Set `GAME_PATH` if the game files are installed elsewhere, or `DOTNET` to select a .NET SDK executable. The client project links the shared registration code and excludes server recipe and consumption logic.
-
-This project contains no Repair Hammer repair behavior and does not modify the source RepairHammer project.
