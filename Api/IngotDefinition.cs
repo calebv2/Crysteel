@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CrystalWeapons;
+namespace CustomIngots.API;
 
 public sealed class IngotIngredient
 {
@@ -21,7 +21,7 @@ public sealed class IngotIngredient
 }
 
 // Stable identifiers and appearance are shared by the server and every client.
-// Add future ingots to IngotCatalog with unique item, prefab, recipe, and material hashes.
+// Register future ingots in IngotCatalog with unique item, prefab, recipe, and material hashes.
 public sealed class IngotDefinition
 {
     public IngotDefinition(

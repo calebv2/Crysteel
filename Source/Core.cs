@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Alta.Inventory;
+using CustomIngots.API;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.1", "ATT", null)]
+[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.2", "ATT", null)]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
 namespace CrystalWeapons;
@@ -25,27 +26,35 @@ public sealed class Core : MelonMod
     {
         try
         {
+            var ingots = IngotCatalog.Seal();
             var allTargets = new List<CrystalMouldTarget>();
-            foreach (var definition in IngotCatalog.All)
+            foreach (var definition in ingots)
             {
-                var material = ReferenceEquals(definition, IngotCatalog.Crystal)
-                    ? CrystalMaterialRegistration.CreateAndRegister()
-                    : CrystalMaterialRegistration.CreateAndRegister(definition);
-                var ingot = IngotRegistration.CreateAndRegister(definition, material);
-                IngotForgeUnlock.Register(ingot, material);
-                var ingotRecipe = IngotSmeltingRecipeRegistration.Register(definition, ingot);
-                foreach (var ingredient in definition.Ingredients)
+                try
                 {
-                    var item = Item.All.FirstOrDefault(candidate => candidate.Hash == ingredient.ItemHash);
-                    if (item != null) CrystalSmelterInputFilter.Allow(item);
+                    var material = ReferenceEquals(definition, IngotCatalog.Crystal)
+                        ? CrystalMaterialRegistration.CreateAndRegister()
+                        : CrystalMaterialRegistration.CreateAndRegister(definition);
+                    var ingot = IngotRegistration.CreateAndRegister(definition, material);
+                    IngotForgeUnlock.Register(ingot, material);
+                    var ingotRecipe = IngotSmeltingRecipeRegistration.Register(definition, ingot);
+                    foreach (var ingredient in definition.Ingredients)
+                    {
+                        var item = Item.All.FirstOrDefault(candidate => candidate.Hash == ingredient.ItemHash);
+                        if (item != null) CrystalSmelterInputFilter.Allow(item);
+                    }
+                    CrystalSmelterInputFilter.Allow(ingot);
+                    allTargets.AddRange(CrystalMouldRecipeRegistration.Register(definition, ingot));
+                    Logger.Msg("Registered " + definition.ItemName + ": item=" + ingot.Hash
+                        + ", prefab=" + ingot.Prefab.Hash + ", material=" + material.Hash
+                        + ", prefabEntity=" + ingot.Prefab.Entity?.Hash
+                        + ", entityPrefab=" + ingot.Prefab.Entity?.Prefab?.Hash
+                        + ", smeltingRecipe=" + ingotRecipe.Hash + ", smeltingDuration=" + ingotRecipe.Duration + ".");
                 }
-                CrystalSmelterInputFilter.Allow(ingot);
-                allTargets.AddRange(CrystalMouldRecipeRegistration.Register(definition, ingot));
-                Logger.Msg("Registered " + definition.ItemName + ": item=" + ingot.Hash
-                    + ", prefab=" + ingot.Prefab.Hash + ", material=" + material.Hash
-                    + ", prefabEntity=" + ingot.Prefab.Entity?.Hash
-                    + ", entityPrefab=" + ingot.Prefab.Entity?.Prefab?.Hash
-                    + ", smeltingRecipe=" + ingotRecipe.Hash + ", smeltingDuration=" + ingotRecipe.Duration + ".");
+                catch (Exception exception)
+                {
+                    Logger.Error("Could not register ingot " + definition.ItemName + "#" + definition.ItemHash + ": " + exception);
+                }
             }
             if (allTargets.Count == 0)
             {

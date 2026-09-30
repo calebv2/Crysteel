@@ -12,6 +12,9 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Api/CustomIngots.API.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="MelonLoader"><HintPath>$(GamePath)/MelonLoader/net35/MelonLoader.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(GamePath)/MelonLoader/net35/0Harmony.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Root.Township"><HintPath>$(GamePath)/A Township Tale_Data/Managed/Root.Township.dll</HintPath><Private>false</Private></Reference>
@@ -24,8 +27,6 @@
     <Compile Include="CrystalForgeConfig.cs" />
     <Compile Include="CrystalMaterialRegistration.cs" />
     <Compile Include="CrystalAppearancePolicy.cs" />
-    <Compile Include="IngotDefinition.cs" />
-    <Compile Include="IngotCatalog.cs" />
     <Compile Include="IngotRegistration.cs" />
     <Compile Include="IngotSpawnActivation.cs" />
     <Compile Include="IngotConsumptionPolicy.cs" />

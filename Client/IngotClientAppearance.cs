@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Alta.Inventory;
 using UnityEngine;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 internal static class IngotClientAppearance

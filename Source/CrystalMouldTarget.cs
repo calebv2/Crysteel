@@ -1,6 +1,8 @@
 using Alta.Blacksmithing;
 using Alta.Inventory;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 public sealed class CrystalMouldTarget

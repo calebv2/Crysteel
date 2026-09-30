@@ -6,11 +6,13 @@ using Alta;
 using Alta.Inventory;
 using UnityEngine;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 public static class CrystalMaterialRegistration
 {
-    public const uint CrystalMaterialHash = 0x43574D00u;
+    public const uint CrystalMaterialHash = IngotCatalog.CrystalMaterialHash;
     private const uint RedIronIngotHash = 30996u;
     private const string AppearanceTemplateName = "Iron";
     private static readonly MethodInfo MemberwiseCloneMethod = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)

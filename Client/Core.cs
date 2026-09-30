@@ -1,9 +1,10 @@
 using System;
+using CustomIngots.API;
 using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.1", "ATT", null)]
+[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.2", "ATT", null)]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
 namespace CrystalWeapons;
@@ -36,17 +37,24 @@ public sealed class Core : MelonMod
 
         try
         {
-            foreach (var definition in IngotCatalog.All)
+            foreach (var definition in IngotCatalog.Seal())
             {
-                var material = ReferenceEquals(definition, IngotCatalog.Crystal)
-                    ? CrystalMaterialRegistration.CreateAndRegister()
-                    : CrystalMaterialRegistration.CreateAndRegister(definition);
-                var ingot = IngotRegistration.CreateAndRegister(definition, material);
-                IngotForgeUnlock.Register(ingot, material);
-                Logger.Msg("Crystal Weapons registered " + definition.ItemName + " on the client: material="
-                    + material.Hash + ", item=" + ingot.Hash + ", prefab=" + ingot.Prefab.Hash
-                    + ", prefabEntity=" + ingot.Prefab.Entity?.Hash
-                    + ", entityPrefab=" + ingot.Prefab.Entity?.Prefab?.Hash + ".");
+                try
+                {
+                    var material = ReferenceEquals(definition, IngotCatalog.Crystal)
+                        ? CrystalMaterialRegistration.CreateAndRegister()
+                        : CrystalMaterialRegistration.CreateAndRegister(definition);
+                    var ingot = IngotRegistration.CreateAndRegister(definition, material);
+                    IngotForgeUnlock.Register(ingot, material);
+                    Logger.Msg("Crystal Weapons registered " + definition.ItemName + " on the client: material="
+                        + material.Hash + ", item=" + ingot.Hash + ", prefab=" + ingot.Prefab.Hash
+                        + ", prefabEntity=" + ingot.Prefab.Entity?.Hash
+                        + ", entityPrefab=" + ingot.Prefab.Entity?.Prefab?.Hash + ".");
+                }
+                catch (Exception exception)
+                {
+                    Logger.Error("Could not register client ingot " + definition.ItemName + "#" + definition.ItemHash + ": " + exception);
+                }
             }
         }
         catch (Exception exception)

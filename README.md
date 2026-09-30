@@ -51,17 +51,19 @@ Invalid values are logged and fall back to the Red Iron field value.
 
 ## Client companion
 
-Dedicated servers use `CrystalWeapons.dll` for ingot and mould recipes, forge behavior, material registration, and output assignment. Player clients use `CrystalWeapons.Client.dll`; it registers the matching ingot item/prefab/material, the forge material lists, and the appearance needed to render the replicated ingot and forged products. It does not add recipes or consume forge inputs.
+Dedicated servers use `CrystalWeapons.dll` for ingot and mould recipes, forge behavior, material registration, and output assignment. Player clients use `CrystalWeapons.Client.dll`; it registers the matching ingot item/prefab/material, the forge material lists, and the appearance needed to render the replicated ingot and forged products. It does not add recipes or consume forge inputs. Both builds reference the shared `CustomIngots.API.dll`.
 
-Build the client DLL with `./build-client.sh`; the artifact is written to `Crystal Weapons Client Build/CrystalWeapons.Client.dll`. Install that client DLL in each player's client `Mods` folder. Keep `CrystalWeapons.dll` on the server and do not place both variants in the same process. The client build disables itself in batch/server runtimes.
+Install `CrystalWeapons.dll` in the dedicated server's `Mods` folder and `CustomIngots.API.dll` in its `UserLibs` folder. Install `CrystalWeapons.Client.dll` in each player's client `Mods` folder and the same `CustomIngots.API.dll` in each client's `UserLibs` folder. Keep the server and client mod DLLs in their respective runtimes. The client build disables itself in batch/server runtimes. `CustomRecipesAPI.dll`, `MateriaLib.dll`, and Repair Hammer are optional separate mods, not dependencies of Crystal Weapons or its API.
 
 Keep matching `CrystalWeapons` override values on the server and clients so the registered Crystal material has consistent local stats. The server remains authoritative for recipes, crafting, damage, and durability. Remove `CrystalIngotRecipeTest.Server.dll` from server Mods and `CrystalIngotRecipeTest.Client.dll` and `CrystalIngotAppearanceTest.dll` from client Mods before starting the integrated version. The test DLLs would register the same hashes.
 
-## Adding another ingot type
+## API for other mods
 
-Add an `IngotDefinition` to `Source/IngotCatalog.cs` on both builds. The definition supplies unique item, prefab, recipe, and material hashes; an Iron Ingot source prefab; one or more ingredient item hashes, names, and counts; and tint/emission colors. Server and client registration loops then create the item, material, appearance, smelting recipe, and mould recipes for that definition. The server also adds its ore ingredients to the smelter input filter. New materials inherit Red Iron gameplay stats unless their registration supplies overrides; Crystal uses the existing `CrystalWeapons` preferences.
+Reference `CustomIngots.API.dll` from another mod, add `using CustomIngots.API;`, and call `IngotCatalog.Register(new IngotDefinition(...))` during that mod's `OnInitializeMelon`. The same definition must be registered on the server and every client before Crystal Weapons' late initialization. The API closes registration at that point and rejects late additions and duplicate item, prefab, recipe, or material hashes. A prefab hash must fit in 16 bits.
 
-To change the Crystal Ingot recipe later, edit its `IngotIngredient` entries in `Source/IngotCatalog.cs` and rebuild the server DLL. For example, a Crystal Gem plus Coal recipe would need a second entry with Coal's verified item hash and name. Coal would then be accepted in an ore dock as a recipe input; the smelter would still need fuel in its fuel dock. Keep the item, prefab, material, and recipe IDs unchanged for saved ingots.
+An `IngotDefinition` supplies a unique item name and hashes, source ingot prefab name, one or more `IngotIngredient` entries, a unique physical material hash and name, and tint/emission colors. Crystal Weapons then creates and registers the ingot prefab and material on both sides. The server adds ingredient items to its ore filter and registers smelting and mould recipes. Client and server use the same catalogue; no separate recipe or material registration through CustomRecipesAPI or MateriaLib is needed for an API ingot. Other mods may continue using those libraries for their own items, but must not register the same hashes twice. New API materials inherit Red Iron gameplay stats; Crystal uses the existing `CrystalWeapons` preferences.
+
+To change the built-in Crystal Ingot recipe later, edit its `IngotIngredient` entries in `Api/IngotCatalog.cs` and rebuild the API and both mod DLLs. For example, a Crystal Gem plus Coal recipe would need a second entry with Coal's verified item hash and name. The server would add Coal to its ore input filter; the smelter would still need fuel in its fuel dock. Keep the item, prefab, material, and recipe IDs unchanged for saved ingots.
 
 ## Build
 
@@ -69,8 +71,8 @@ To change the Crystal Ingot recipe later, edit its `IngotIngredient` entries in 
 ./build.sh
 ```
 
-The script builds `CrystalWeapons.dll` against the installed A Township Tale managed assemblies and writes the Release artifact to `Crystal Weapons Build/CrystalWeapons.dll`. Set `GAME_PATH` if the game files are installed elsewhere, or `DOTNET` to select a .NET SDK executable.
+The script builds the API dependency and `CrystalWeapons.dll` against the installed A Township Tale managed assemblies. Release artifacts are written to `Custom Ingots API Build/CustomIngots.API.dll` and `Crystal Weapons Build/CrystalWeapons.dll`. Set `GAME_PATH` if the game files are installed elsewhere, or `DOTNET` to select a .NET SDK executable.
 
-Run `./build-client.sh` to build the client Release artifact separately. The client project links the shared ingot definitions and registration code but excludes server recipe and consumption logic.
+Run `./build-client.sh` to build the client Release artifact separately. It builds the same API DLL and writes `Crystal Weapons Client Build/CrystalWeapons.Client.dll`. `./build-api.sh` builds only the API for mods that compile against it. Run these build scripts one at a time because they share the API project's intermediate files. The client project references the API and shared registration code but excludes server recipe and consumption logic.
 
 This project contains no Repair Hammer repair behavior and does not modify the source RepairHammer project.

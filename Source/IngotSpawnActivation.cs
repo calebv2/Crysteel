@@ -3,6 +3,8 @@ using System.Reflection;
 using Alta.Networking;
 using HarmonyLib;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 internal static class IngotSpawnActivation

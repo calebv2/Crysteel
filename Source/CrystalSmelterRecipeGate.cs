@@ -7,6 +7,8 @@ using Alta.Inventory;
 using HarmonyLib;
 using UnityEngine;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 [HarmonyPatch(typeof(Smelter), "FindRecipe")]

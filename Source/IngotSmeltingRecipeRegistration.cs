@@ -7,6 +7,8 @@ using Alta.Blacksmithing;
 using Alta.Inventory;
 using UnityEngine;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 internal static class IngotSmeltingRecipeRegistration

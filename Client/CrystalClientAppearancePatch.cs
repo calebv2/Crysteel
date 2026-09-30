@@ -7,6 +7,8 @@ using Alta.Heat;
 using HarmonyLib;
 using UnityEngine;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 internal static class CrystalClientAppearancePatch

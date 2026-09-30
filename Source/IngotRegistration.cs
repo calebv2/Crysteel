@@ -7,6 +7,8 @@ using Alta.Inventory;
 using Alta.Networking;
 using UnityEngine;
 
+using CustomIngots.API;
+
 namespace CrystalWeapons;
 
 public static class IngotRegistration
