@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class CrystalMaterialDefaults
 {

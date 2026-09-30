@@ -9,7 +9,7 @@ using UnityEngine;
 
 using CustomIngots.API;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class IngotSmeltingRecipeRegistration
 {

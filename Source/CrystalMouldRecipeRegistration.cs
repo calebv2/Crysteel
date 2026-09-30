@@ -9,7 +9,7 @@ using UnityEngine;
 
 using CustomIngots.API;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 public static class CrystalMouldRecipeRegistration
 {
@@ -128,7 +128,7 @@ public static class CrystalMouldRecipeRegistration
 
         targets = targets.Concat(registeredTargets).ToArray();
         RegisteredIngotHashes.Add(ingotDefinition.ItemHash);
-        Core.Logger.Msg("Crystal Weapons registered " + registeredTargets.Count + " of " + candidates.Length
+        Core.Logger.Msg("Crysteel registered " + registeredTargets.Count + " of " + candidates.Length
             + " discovered mould products for " + ingotDefinition.ItemName + ".");
         return registeredTargets;
     }

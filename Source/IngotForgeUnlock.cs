@@ -4,7 +4,7 @@ using System.Reflection;
 using Alta.Blacksmithing;
 using Alta.Inventory;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class IngotForgeUnlock
 {

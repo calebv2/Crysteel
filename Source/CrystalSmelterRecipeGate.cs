@@ -9,7 +9,7 @@ using UnityEngine;
 
 using CustomIngots.API;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 [HarmonyPatch(typeof(Smelter), "FindRecipe")]
 [HarmonyPriority(Priority.First)]
@@ -119,14 +119,14 @@ internal static class CrystalSmelterRecipeGate
             ConsumePlannedInputs(smelter, oreDocks, amountsByDock);
             requiredFuel = recipe.Duration;
             result = recipe;
-            Core.Logger.Msg("Crystal Weapons selected recipe " + recipe.name + "#" + recipe.Hash + ".");
+            Core.Logger.Msg("Crysteel selected recipe " + recipe.name + "#" + recipe.Hash + ".");
             return false;
         }
         catch (Exception exception)
         {
             requiredFuel = 0f;
             result = null;
-            Core.Logger.Error("Crystal Weapons input consumption failed for recipe " + recipe.Hash + ": " + exception);
+            Core.Logger.Error("Crysteel input consumption failed for recipe " + recipe.Hash + ": " + exception);
             return false;
         }
     }
@@ -176,7 +176,7 @@ internal static class CrystalSmelterRecipeGate
     {
         requiredFuel = 0f;
         result = null;
-        Core.Logger.Msg("Crystal Weapons recipe rejected: " + reason);
+        Core.Logger.Msg("Crysteel recipe rejected: " + reason);
         return false;
     }
 

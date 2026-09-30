@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>CrystalWeapons.Client</AssemblyName>
-    <RootNamespace>CrystalWeapons</RootNamespace>
+    <AssemblyName>Crysteel.Client</AssemblyName>
+    <RootNamespace>Crysteel</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GamePath>/game</GamePath>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <OutputPath>../Crystal Weapons Client Build/</OutputPath>
+    <OutputPath>../Crysteel Client Build/</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>

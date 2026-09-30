@@ -7,7 +7,7 @@ using UnityEngine;
 
 using CustomIngots.API;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 public static class CrystalMaterialRegistration
 {
@@ -42,7 +42,7 @@ public static class CrystalMaterialRegistration
                 ?? throw new InvalidOperationException("Could not resolve source PhysicalMaterial hash "
                     + scaling.SourceMaterialHash + " for " + definition.ItemName + ".");
 
-        Core.Logger.Msg("Crystal Weapons material template for " + definition.ItemName + ": PhysicalMaterial '"
+        Core.Logger.Msg("Crysteel material template for " + definition.ItemName + ": PhysicalMaterial '"
             + sourceMaterial.name + "'(" + sourceMaterial.Hash + ").");
 
         var material = UnityEngine.Object.Instantiate(sourceMaterial);
@@ -53,12 +53,12 @@ public static class CrystalMaterialRegistration
         if (scaling != null) ApplyStatScaling(material, sourceMaterial, scaling);
         applyStats?.Invoke(material, sourceMaterial);
         if (scaling != null)
-            Core.Logger.Msg("Crystal Weapons " + definition.ItemName + " effective stats: damage="
+            Core.Logger.Msg("Crysteel " + definition.ItemName + " effective stats: damage="
                 + material.DamageMultiplier + " (source " + sourceMaterial.DamageMultiplier + "), durability="
                 + material.DurabilityMultiplier + " (source " + sourceMaterial.DurabilityMultiplier + ").");
         AssignStableHash(material, definition.MaterialHash, definition.MaterialName);
         Register(material, definition);
-        Core.Logger.Msg("Registered Crystal Weapons material '" + material.name + "' with stable hash " + material.Hash + ".");
+        Core.Logger.Msg("Registered Crysteel material '" + material.name + "' with stable hash " + material.Hash + ".");
         return material;
     }
 
@@ -95,11 +95,11 @@ public static class CrystalMaterialRegistration
             ?? throw new MissingFieldException(typeof(PhysicalMaterial).FullName, "materialChannels");
         if (channelsField.GetValue(appearanceTemplate) is not Array channels)
         {
-            throw new InvalidOperationException("Crystal Weapons requires Iron PhysicalMaterial.materialChannels to be an array.");
+            throw new InvalidOperationException("Crysteel requires Iron PhysicalMaterial.materialChannels to be an array.");
         }
 
         var elementType = channels.GetType().GetElementType()
-            ?? throw new InvalidOperationException("Crystal Weapons material channel type is unavailable.");
+            ?? throw new InvalidOperationException("Crysteel material channel type is unavailable.");
         var clonedChannels = Array.CreateInstance(elementType, channels.Length);
         for (var index = 0; index < channels.Length; index++)
         {
@@ -107,7 +107,7 @@ public static class CrystalMaterialRegistration
             if (channel == null) continue;
 
             var clonedChannel = MemberwiseCloneMethod.Invoke(channel, null)
-                ?? throw new InvalidOperationException("Crystal Weapons failed to clone an Iron material channel.");
+                ?? throw new InvalidOperationException("Crysteel failed to clone an Iron material channel.");
             foreach (var field in channel.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 if (field.FieldType == typeof(Material) && field.GetValue(clonedChannel) is Material sourceMaterial)
@@ -120,7 +120,7 @@ public static class CrystalMaterialRegistration
         }
 
         channelsField.SetValue(material, clonedChannels);
-        Core.Logger.Msg("Crystal Weapons appearance: copied vanilla Iron renderer materials/channels for "
+        Core.Logger.Msg("Crysteel appearance: copied vanilla Iron renderer materials/channels for "
             + definition.ItemName + ", cloned " + clonedMaterials.Count + " Unity materials, and applied its configured tint/emission.");
     }
 

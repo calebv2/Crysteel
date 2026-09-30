@@ -5,7 +5,7 @@ using HarmonyLib;
 
 using CustomIngots.API;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class IngotSpawnActivation
 {

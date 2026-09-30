@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class IngotConsumptionPolicy
 {

@@ -10,7 +10,7 @@ using Alta.Networking;
 using HarmonyLib;
 using UnityEngine;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 [HarmonyPatch]
 internal static class CrystalMouldOutputMaterialPatch

@@ -3,7 +3,7 @@ using Alta.Inventory;
 
 using CustomIngots.API;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 public sealed class CrystalMouldTarget
 {

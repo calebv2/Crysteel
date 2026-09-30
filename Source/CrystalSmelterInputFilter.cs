@@ -6,7 +6,7 @@ using Alta.Inventory;
 using Alta.Networking;
 using HarmonyLib;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 [HarmonyPatch(typeof(NetworkPrefab), "Initialize")]
 internal static class CrystalSmelterInputFilter
@@ -26,7 +26,7 @@ internal static class CrystalSmelterInputFilter
         }
         catch (Exception exception)
         {
-            Core.Logger.Warning("Crystal Weapons could not update the existing smelter prefab input list: " + exception);
+            Core.Logger.Warning("Crysteel could not update the existing smelter prefab input list: " + exception);
         }
     }
 
@@ -49,14 +49,14 @@ internal static class CrystalSmelterInputFilter
             var oreDock = oreDockEntity == null ? null : oreDockEntity.gameObject.GetComponent<PickupDock>();
             if (oreDock == null)
             {
-                Core.Logger.Warning("Crystal Weapons could not find the smelter ore dock on prefab " + prefab.Hash + ".");
+                Core.Logger.Warning("Crysteel could not find the smelter ore dock on prefab " + prefab.Hash + ".");
                 return;
             }
 
             var includedItems = oreDock.Settings == null ? null : oreDock.Settings.IncludedItems;
             if (includedItems == null)
             {
-                Core.Logger.Warning("Crystal Weapons found the smelter ore dock but its included-item settings were unavailable.");
+                Core.Logger.Warning("Crysteel found the smelter ore dock but its included-item settings were unavailable.");
                 return;
             }
 
@@ -67,7 +67,7 @@ internal static class CrystalSmelterInputFilter
         }
         catch (Exception exception)
         {
-            Core.Logger.Warning("Crystal Weapons could not update smelter prefab " + prefab.Hash + " input settings: " + exception);
+            Core.Logger.Warning("Crysteel could not update smelter prefab " + prefab.Hash + " input settings: " + exception);
         }
     }
 }

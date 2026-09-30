@@ -1,6 +1,6 @@
 using System;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class CrystalAppearancePolicy
 {

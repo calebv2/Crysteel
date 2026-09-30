@@ -5,10 +5,10 @@ using Alta.Inventory;
 using CustomIngots.API;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.4", "ATT", null)]
+[assembly: MelonInfo(typeof(Crysteel.Core), "Crysteel", "2.4", "ATT", null)]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 public sealed class Core : MelonMod
 {
@@ -18,7 +18,7 @@ public sealed class Core : MelonMod
     {
         Logger = LoggerInstance;
         IngotSpawnActivation.Install(HarmonyInstance, message => Logger.Msg(message));
-        Logger.Msg("Crystal Weapons initialized.");
+        Logger.Msg("Crysteel initialized.");
     }
 
     public override void OnLateInitializeMelon()
@@ -57,14 +57,14 @@ public sealed class Core : MelonMod
             }
             if (allTargets.Count == 0)
             {
-                Logger.Warning("Crystal Weapons did not register any valid mould products.");
+                Logger.Warning("Crysteel did not register any valid mould products.");
             }
 
-            Logger.Msg("Crystal Weapons initialized with " + allTargets.Count + " custom mould recipes.");
+            Logger.Msg("Crysteel initialized with " + allTargets.Count + " custom mould recipes.");
         }
         catch (Exception exception)
         {
-            Logger.Error("Crystal Weapons late initialization failed: " + exception);
+            Logger.Error("Crysteel late initialization failed: " + exception);
         }
     }
 }

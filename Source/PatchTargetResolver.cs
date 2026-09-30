@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Alta.Blacksmithing;
 
-namespace CrystalWeapons;
+namespace Crysteel;
 
 internal static class PatchTargetResolver
 {

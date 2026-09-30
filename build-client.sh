@@ -14,6 +14,6 @@ if ! command -v "$dotnet_command" >/dev/null 2>&1; then
     fi
 fi
 
-exec "$dotnet_command" build "$project_root/Client/CrystalWeapons.Client.csproj" \
+exec "$dotnet_command" build "$project_root/Client/Crysteel.Client.csproj" \
     -c Release \
     "-p:GamePath=$game_path"
