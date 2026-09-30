@@ -23,9 +23,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core.cs" />
+    <Compile Include="CrystalClientMaterialDefaults.cs" />
     <Compile Include="CrystalClientAppearancePatch.cs" />
     <Compile Include="IngotClientAppearance.cs" />
-    <Compile Include="../Source/CrystalForgeConfig.cs" Link="Shared/CrystalForgeConfig.cs" />
     <Compile Include="../Source/CrystalMaterialRegistration.cs" Link="Shared/CrystalMaterialRegistration.cs" />
     <Compile Include="../Source/CrystalAppearancePolicy.cs" Link="Shared/CrystalAppearancePolicy.cs" />
     <Compile Include="../Source/IngotRegistration.cs" Link="Shared/IngotRegistration.cs" />
