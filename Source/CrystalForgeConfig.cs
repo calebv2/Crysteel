@@ -36,6 +36,8 @@ public static class CrystalForgeConfig
     private static readonly BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly Dictionary<string, MelonPreferences_Entry<float>> FloatEntries = new Dictionary<string, MelonPreferences_Entry<float>>(StringComparer.Ordinal);
     private static MelonPreferences_Entry<int>? hardnessLevelOverride;
+    private static MelonPreferences_Entry<float>? crysteelDamageScale;
+    private static MelonPreferences_Entry<float>? crysteelDurabilityScale;
     private static bool initialized;
 
     public static void Initialize()
@@ -58,7 +60,42 @@ public static class CrystalForgeConfig
             -1,
             "hardnessLevel override",
             "Set to -1 to inherit the Red Iron value; use a nonnegative integer to override.");
+        crysteelDamageScale = category.CreateEntry<float>(
+            "crysteelDamageScale", 1.10f, "Crysteel damage scale",
+            "Multiply the live Darksteel damage multiplier by this positive finite value.");
+        crysteelDurabilityScale = category.CreateEntry<float>(
+            "crysteelDurabilityScale", 0.90f, "Crysteel durability scale",
+            "Multiply the live Darksteel durability multiplier by this positive finite value.");
         initialized = true;
+    }
+
+    public static void ApplyCrysteelScaling(PhysicalMaterial target, PhysicalMaterial darksteel)
+    {
+        if (!initialized) Initialize();
+        if (target == null) throw new ArgumentNullException(nameof(target));
+        if (darksteel == null) throw new ArgumentNullException(nameof(darksteel));
+
+        ApplyScale(target, darksteel, "damageMultiplier", crysteelDamageScale!.Value, 1.10f);
+        ApplyScale(target, darksteel, "durabilityMultiplier", crysteelDurabilityScale!.Value, 0.90f);
+    }
+
+    private static void ApplyScale(PhysicalMaterial target, PhysicalMaterial source, string fieldName, float configuredScale, float defaultScale)
+    {
+        var scale = configuredScale;
+        if (float.IsNaN(scale) || float.IsInfinity(scale) || scale <= 0f)
+        {
+            Core.Logger.Warning("Invalid Crysteel scale for " + fieldName + "="
+                + scale.ToString(CultureInfo.InvariantCulture) + "; using "
+                + defaultScale.ToString(CultureInfo.InvariantCulture) + ".");
+            scale = defaultScale;
+        }
+
+        var field = GetMaterialField(fieldName, typeof(float));
+        var sourceValue = (float)(field.GetValue(source) ?? 0f);
+        var scaled = sourceValue * scale;
+        if (float.IsNaN(scaled) || float.IsInfinity(scaled) || scaled <= 0f)
+            throw new InvalidOperationException("Crysteel " + fieldName + " is invalid after scaling Darksteel.");
+        field.SetValue(target, scaled);
     }
 
     public static void ApplyOverrides(PhysicalMaterial target, PhysicalMaterial redIron)

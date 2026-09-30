@@ -20,10 +20,48 @@ public sealed class IngotIngredient
     public int Count { get; }
 }
 
+public sealed class IngotStatScaling
+{
+    public IngotStatScaling(uint sourceMaterialHash, float damageScale, float durabilityScale)
+    {
+        if (sourceMaterialHash == 0) throw new ArgumentOutOfRangeException(nameof(sourceMaterialHash));
+        if (float.IsNaN(damageScale) || float.IsInfinity(damageScale) || damageScale <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(damageScale));
+        if (float.IsNaN(durabilityScale) || float.IsInfinity(durabilityScale) || durabilityScale <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(durabilityScale));
+        SourceMaterialHash = sourceMaterialHash;
+        DamageScale = damageScale;
+        DurabilityScale = durabilityScale;
+    }
+
+    public uint SourceMaterialHash { get; }
+    public float DamageScale { get; }
+    public float DurabilityScale { get; }
+}
+
 // Stable identifiers and appearance are shared by the server and every client.
 // Register future ingots in IngotCatalog with unique item, prefab, recipe, and material hashes.
 public sealed class IngotDefinition
 {
+    public IngotDefinition(
+        IngotStatScaling statScaling,
+        string itemName,
+        string sourceItemName,
+        uint itemHash,
+        uint prefabHash,
+        uint recipeHash,
+        uint materialHash,
+        string materialName,
+        IngotIngredient[] ingredients,
+        Color tint,
+        Color emission,
+        params uint[] legacyPrefabHashes)
+        : this(itemName, sourceItemName, itemHash, prefabHash, recipeHash, materialHash,
+            materialName, ingredients, tint, emission, legacyPrefabHashes)
+    {
+        StatScaling = statScaling ?? throw new ArgumentNullException(nameof(statScaling));
+    }
+
     public IngotDefinition(
         string itemName,
         string sourceItemName,
@@ -77,5 +115,6 @@ public sealed class IngotDefinition
     public System.Collections.Generic.IReadOnlyList<IngotIngredient> Ingredients { get; }
     public Color Tint { get; }
     public Color Emission { get; }
+    public IngotStatScaling? StatScaling { get; }
     public System.Collections.Generic.IReadOnlyList<uint> LegacyPrefabHashes { get; }
 }

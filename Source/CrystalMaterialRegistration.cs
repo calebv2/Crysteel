@@ -15,6 +15,7 @@ public static class CrystalMaterialRegistration
     public const uint CrystalMaterialHash = IngotCatalog.CrystalMaterialHash;
     private const uint RedIronIngotHash = 30996u;
     private const string AppearanceTemplateName = "Iron";
+    private static readonly BindingFlags MaterialFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly MethodInfo MemberwiseCloneMethod = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(typeof(object).FullName, "MemberwiseClone");
 
@@ -45,6 +46,13 @@ public static class CrystalMaterialRegistration
             throw new InvalidOperationException("Red Iron ingot " + redIronItem.name + " has no Ingot.PhysicalMaterial template.");
         }
 
+        var scaling = definition.StatScaling;
+        var sourceMaterial = scaling == null
+            ? redIron
+            : PhysicalMaterial.All.FirstOrDefault(candidate => candidate.Hash == scaling.SourceMaterialHash)
+                ?? throw new InvalidOperationException("Could not resolve source PhysicalMaterial hash "
+                    + scaling.SourceMaterialHash + " for " + definition.ItemName + ".");
+
         var ironAppearance = PhysicalMaterial.All.FirstOrDefault(candidate =>
             string.Equals(candidate.name, AppearanceTemplateName, StringComparison.Ordinal));
         if (ironAppearance == null)
@@ -52,16 +60,42 @@ public static class CrystalMaterialRegistration
             throw new InvalidOperationException("Could not resolve the vanilla Iron PhysicalMaterial used by the RepairHammer crystal appearance.");
         }
 
-        Core.Logger.Msg("Crystal Weapons material template: " + redIronItem.name + "(" + redIronItem.Hash + ") uses PhysicalMaterial '" + redIron.name + "'(" + redIron.Hash + ").");
+        Core.Logger.Msg("Crystal Weapons material template for " + definition.ItemName + ": PhysicalMaterial '"
+            + sourceMaterial.name + "'(" + sourceMaterial.Hash + ").");
 
-        var material = UnityEngine.Object.Instantiate(redIron);
+        var material = UnityEngine.Object.Instantiate(sourceMaterial);
         material.name = definition.MaterialName;
+        var showInListField = typeof(PhysicalMaterial).GetField("isShowingInList", MaterialFields);
+        if (showInListField?.FieldType == typeof(bool)) showInListField.SetValue(material, true);
         CopyAndTintAppearance(material, ironAppearance, definition);
-        applyStats?.Invoke(material, redIron);
+        if (scaling != null) ApplyStatScaling(material, sourceMaterial, scaling);
+        applyStats?.Invoke(material, sourceMaterial);
+        if (scaling != null)
+            Core.Logger.Msg("Crystal Weapons " + definition.ItemName + " effective stats: damage="
+                + material.DamageMultiplier + " (source " + sourceMaterial.DamageMultiplier + "), durability="
+                + material.DurabilityMultiplier + " (source " + sourceMaterial.DurabilityMultiplier + ").");
         AssignStableHash(material, definition.MaterialHash, definition.MaterialName);
         Register(material, definition);
         Core.Logger.Msg("Registered Crystal Weapons material '" + material.name + "' with stable hash " + material.Hash + ".");
         return material;
+    }
+
+    private static void ApplyStatScaling(PhysicalMaterial target, PhysicalMaterial source, IngotStatScaling scaling)
+    {
+        SetScaledField(target, source, "damageMultiplier", scaling.DamageScale);
+        SetScaledField(target, source, "durabilityMultiplier", scaling.DurabilityScale);
+    }
+
+    private static void SetScaledField(PhysicalMaterial target, PhysicalMaterial source, string fieldName, float scale)
+    {
+        var field = typeof(PhysicalMaterial).GetField(fieldName, MaterialFields);
+        if (field == null || field.FieldType != typeof(float))
+            throw new MissingFieldException(typeof(PhysicalMaterial).FullName, fieldName + " (expected Single)");
+        var baseValue = (float)(field.GetValue(source) ?? 0f);
+        var scaled = baseValue * scale;
+        if (float.IsNaN(scaled) || float.IsInfinity(scaled) || scaled <= 0f)
+            throw new InvalidOperationException("Scaled " + fieldName + " is invalid for " + target.name + ".");
+        field.SetValue(target, scaled);
     }
 
     private static void CopyAndTintAppearance(PhysicalMaterial material, PhysicalMaterial appearanceTemplate, IngotDefinition definition)

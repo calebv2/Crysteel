@@ -4,7 +4,7 @@ using HarmonyLib;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.2", "ATT", null)]
+[assembly: MelonInfo(typeof(CrystalWeapons.Core), "Crystal Weapons", "2.3", "ATT", null)]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
 namespace CrystalWeapons;
@@ -43,7 +43,9 @@ public sealed class Core : MelonMod
                 {
                     var material = ReferenceEquals(definition, IngotCatalog.Crystal)
                         ? CrystalMaterialRegistration.CreateAndRegister()
-                        : CrystalMaterialRegistration.CreateAndRegister(definition);
+                        : ReferenceEquals(definition, IngotCatalog.Crysteel)
+                            ? CrystalMaterialRegistration.CreateAndRegister(definition, CrystalForgeConfig.ApplyCrysteelScaling)
+                            : CrystalMaterialRegistration.CreateAndRegister(definition);
                     var ingot = IngotRegistration.CreateAndRegister(definition, material);
                     IngotForgeUnlock.Register(ingot, material);
                     Logger.Msg("Crystal Weapons registered " + definition.ItemName + " on the client: material="

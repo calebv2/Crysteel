@@ -8,6 +8,8 @@ namespace CustomIngots.API;
 public static class IngotCatalog
 {
     public const uint CrystalMaterialHash = 0x43574D00u;
+    public const uint DarksteelMaterialHash = 55232u;
+    public const uint CrysteelMaterialHash = 0x43574D02u;
 
     public static readonly IngotDefinition Crystal = new IngotDefinition(
         "Crystal Ingot", "Iron Ingot",
@@ -18,8 +20,21 @@ public static class IngotCatalog
         new Color(185f / 255f, 1f, 254f / 255f, 1f),
         0x43575001u);
 
+    public static readonly IngotDefinition Crysteel = new IngotDefinition(
+        new IngotStatScaling(DarksteelMaterialHash, 1.10f, 0.90f),
+        "Crysteel Ingot", "Iron Ingot",
+        0x43574902u, 0x5002u, 0x43575202u,
+        CrysteelMaterialHash, "Crysteel",
+        new[]
+        {
+            new IngotIngredient(50292u, "Darksteel Ingot", 1),
+            new IngotIngredient(45754u, "Crystal Gem Blue", 20)
+        },
+        new Color(0.18f, 0.80f, 1f, 0.85f),
+        new Color(0.78f, 0.97f, 1f, 1f));
+
     private static readonly object Sync = new object();
-    private static IngotDefinition[] Definitions = { Crystal };
+    private static IngotDefinition[] Definitions = { Crystal, Crysteel };
     private static IReadOnlyList<IngotDefinition> ReadOnlyDefinitions = Array.AsReadOnly(Definitions);
     private static bool sealedForRuntime;
 
